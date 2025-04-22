@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Resolução de Questões - Concurso</title>
+  <!-- Bootstrap via CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+    /* Estilo da sidebar */
+    #sidebar {
+      width: 230px;
+      min-height: 100vh;
+      background-color: #f8f9fa;
+      padding: 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      border-right: 1px solid #ddd;
+    }
+    /* Toolbar com botão Finalizar */
+    #toolbar {
+      position: fixed;
+      top: 0;
+      left: 230px; /* respeita a largura da sidebar */
+      right: 0;
+      height: 60px;
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 20px;
+      z-index: 1000;
+    }
+    /* Área principal: ajusta margem para sidebar e toolbar */
+    #main {
+      margin-left: 220px;
+      margin-top: 60px;
+      padding: 20px;
+    }
+    /* Container da questão */
+    #questao-container {
+      min-width: 400px;
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      position: relative;
+    }
+    /* Botões de navegação posicionados no canto superior direito da div da questão */
+    #navegacao {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    #navegacao button {
+      margin-left: 10px;
+    }
+    .alternativa {
+      cursor: pointer;
+      padding: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 5px;
+      border-radius: 4px;
+    }
+    .alternativa:hover {
+      background-color: #d9d9d9;
+    }
+    /* Destaques */
+    .selecionada {
+      background-color: #d9d9d9;
+    }
+    .correta {
+      background-color: #cce5ff !important;
+      border-color: #66b0ff !important;
+    }
+    .errada {
+      background-color: #f8d7da !important;
+      border-color: #f5c6cb !important;
+    }
+    /* Estilo da imagem na questão */
+    .questao-imagem {
+      display: block;
+      margin: 15px auto;
+      max-width: 100%;
+      height: auto;
+    }
+    /* Estilo para submenu de matérias */
+    .submenu {
+      padding-left: 15px;
+      margin-top: 5px;
+      display: none;
+    }
+    .submenu li {
+      cursor: pointer;
+    }
+    /* Botão para expandir/recolher – sem borda e com mesmo estilo do texto */
+    .expand-banca {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font-size: 1rem;
+      text-align: left;
+      width: 100%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <h4>Provas</h4>
+    <ul class="list-group" id="lista-provas">
+      <!-- Item de Banca X com submenu expansível -->
+      <li class="list-group-item">
+        <button type="button" class="expand-banca fw-bold" data-banca="x">Banca: Consesp</button>
+        <ul class="list-group submenu" id="submenu-banca-x">
+          <!-- As provas serão adicionadas aqui -->
+        </ul>
+      </li>
+      <!-- Item de Banca Y com submenu expansível -->
+      <li class="list-group-item">
+        <button type="button" class="expand-banca fw-bold" data-banca="y">Banca: CNU</button>
+        <ul class="list-group submenu" id="submenu-banca-y">
+          <!-- As provas serão adicionadas aqui -->
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <button id="btn-finalizar" class="btn btn-secondary" disabled>Finalizar prova</button>
+  </div>
+
+  <!-- Conteúdo Principal -->
+  <div id="main">
+    <div id="questao-container" class="shadow">
+      <div id="navegacao">
+        <button id="btn-voltar" class="btn btn-secondary" disabled>Voltar</button>
+        <button id="btn-avancar" class="btn btn-secondary" disabled>Avançar</button>
+      </div>
+      <div id="conteudo-questao">
+        <p>Selecione uma prova na lista à esquerda.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Configuração das provas e suas matérias (caso possuam submenu)
+    // Se uma prova não tiver submenu, basta informar o arquivo CSV diretamente
+    const provasConfig = [
+      { 
+        nome: 'Prova 1 (MÉD)', 
+        materias: [
+          { nome: 'Português', arquivo: 'consesp/prova-1/consesp1-por-2018.csv' },
+          { nome: 'Matemática', arquivo: 'consesp/prova-1/consesp1-mat-2018.csv' },
+          { nome: 'Informática', arquivo: 'consesp/prova-1/consesp1-inf-2018.csv' }
+        ]
+      },
+      {
+        nome: 'Prova 2 (SUP)', 
+        materias: [
+          { nome: 'Português', arquivo: 'consesp/prova-2/consesp2-por-2017.csv' },
+        ]
+      },
+      {
+        nome: 'Prova 3 (MÉD)', 
+        materias: [
+          { nome: 'Português', arquivo: 'consesp/prova-3/consesp3-por.csv' },
+          { nome: 'Matemática', arquivo: 'consesp/prova-3/consesp3-mat.csv' }
+        ]
+      },
+      {
+        nome: 'Prova 4 (SUP)', 
+        materias: [
+          { nome: 'Português', arquivo: 'consesp/prova-4/consesp4-por.csv' },
+          { nome: 'Informática', arquivo: 'consesp/prova-4/consesp4-inf.csv' }
+        ]
+      },
+      {
+        nome: 'Prova 5 (SUP)', 
+        materias: [
+          { nome: 'Português', arquivo: 'consesp/prova-5/consesp5-por.csv' },
+          { nome: 'Matemática', arquivo: 'consesp/prova-5/consesp5-mat.csv' }
+        ]
+      },
+      {
+        nome: 'Prova 6 (SUP)', 
+        materias: [
+          { nome: 'Português', arquivo: 'consesp/prova-6/consesp6-por.csv' }
+        ]
+      },
+      {
+        nome: 'Prova 7 (SUP)', 
+        materias: [
+          { nome: 'Português', arquivo: 'consesp/prova-7/consesp7-por.csv' }
+        ]
+      },
+      // Adicione outras provas conforme necessário...
+    ];
+
+    // Variáveis globais
+    let questoes = [];
+    let respostas = [];
+    let indiceQuestaoAtual = 0;
+    let finalizado = false; // Indica se a prova foi finalizada
+
+    // Elementos
+    const conteudoQuestao = document.getElementById('conteudo-questao');
+    const btnVoltar = document.getElementById('btn-voltar');
+    const btnAvancar = document.getElementById('btn-avancar');
+    const btnFinalizar = document.getElementById('btn-finalizar');
+    const listaProvas = document.getElementById('lista-provas');
+    // Seleciona os submenus das bancas
+    const submenuBancaX = document.getElementById('submenu-banca-x');
+    const submenuBancaY = document.getElementById('submenu-banca-y');
+
+    // Função que renderiza as provas dentro de uma banca específica.
+    // Neste exemplo, todas as provas configuradas são inseridas em Banca X.
+    // Você pode adaptar a lógica para distribuir as provas entre diferentes bancas.
+    function renderSidebar() {
+      provasConfig.forEach((prova, index) => {
+        const li = document.createElement('li');
+        li.classList.add('list-group-item', 'prova-item');
+        // Se a prova tiver submenu (matérias) adiciona data-prova-index
+        if(prova.materias) {
+          li.setAttribute('data-prova-index', index);
+          li.textContent = prova.nome;
+        } else {
+          li.textContent = prova.nome;
+          li.setAttribute('data-arquivo', prova.arquivo);
+        }
+        // Por padrão, adiciona todas as provas na "Banca X"
+        submenuBancaX.appendChild(li);
+      });
+    }
+
+    // Executa a renderização da sidebar
+    renderSidebar();
+
+    // Carregar e processar prova a partir do CSV
+    function carregarProva(arquivoCSV) {
+      fetch(arquivoCSV)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erro ao carregar o arquivo: ' + arquivoCSV);
+          }
+          return response.text();
+        })
+        .then(csvText => {
+          processarCSV(csvText);
+          indiceQuestaoAtual = 0;
+          finalizado = false;
+          respostas = new Array(questoes.length).fill("");
+          exibirQuestao(indiceQuestaoAtual);
+        })
+        .catch(error => {
+          conteudoQuestao.innerHTML = `<p class="text-danger">${error}</p>`;
+        });
+    }
+
+    // Processar CSV – estrutura igual à do código original
+    function processarCSV(csvText) {
+      questoes = [];
+      const linhas = csvText.split('\n').filter(linha => linha.trim() !== '');
+      linhas.forEach(linha => {
+        const colunas = parseCSV(linha);
+        if (colunas.length >= 7) {
+          const alternativas = {
+            A: colunas[1],
+            B: colunas[2],
+            C: colunas[3],
+            D: colunas[4]
+          };
+          if(colunas[5] && colunas[5].trim() !== ""){
+            alternativas["E"] = colunas[5];
+          }
+          let imagem = "";
+          if(colunas.length >= 8 && colunas[7].trim() !== ""){
+            imagem = colunas[7];
+          }
+          const questao = {
+            enunciado: colunas[0],
+            alternativas: alternativas,
+            correta: colunas[6].trim().toUpperCase(),
+            imagem: imagem
+          };
+          questoes.push(questao);
+        }
+      });
+    }
+
+    // Fazer parse de linha CSV
+    function parseCSV(text) {
+      const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/g;
+      return text.split(regex).map(token => {
+        token = token.trim();
+        if(token.startsWith('"') && token.endsWith('"')){
+          token = token.slice(1, -1);
+        }
+        return token;
+      });
+    }
+
+    // Exibir a questão atual
+    function exibirQuestao(indice) {
+      if (indice < 0 || indice >= questoes.length) return;
+      const questao = questoes[indice];
+      let html = `<h4>Questão ${indice + 1} de ${questoes.length}</h4>`;
+      
+      if(finalizado) {
+        let acertos = 0;
+        questoes.forEach((q, idx) => {
+          if (respostas[idx] === q.correta) acertos++;
+        });
+        html += `<p id="resultado-prova" class="text-secondary">Você acertou ${acertos} de ${questoes.length}</p>`;
+      }
+      
+      html += `<p>${questao.enunciado}</p>`;
+      if(questao.imagem){
+        html += `<img src="img/${questao.imagem}" alt="Imagem da questão" class="questao-imagem">`;
+      }
+      html += `<div id="alternativas" class="mb-3">`;
+      for (const letra in questao.alternativas) {
+        const texto = questao.alternativas[letra];
+        let classe = "alternativa";
+        if(finalizado && respostas[indice]) {
+          if (letra === questao.correta) {
+            classe += " correta";
+          }
+          if (respostas[indice] === letra && letra !== questao.correta) {
+            classe += " errada";
+          }
+        } else if (respostas[indice] && respostas[indice] === letra) {
+          classe += " border-1 border-dark selecionada";
+        }
+        html += `<div class="${classe}" data-letra="${letra}"><strong>${letra}.</strong> ${texto}</div>`;
+      }
+      html += `</div>`;
+      
+      conteudoQuestao.innerHTML = html;
+      btnVoltar.disabled = (indice === 0);
+      btnAvancar.disabled = (indice === questoes.length - 1);
+      
+      // Atualiza classe do botão "Finalizar" conforme o status
+      const podeFinalizar = !respostas.includes("") && !finalizado;
+      btnFinalizar.disabled = !podeFinalizar;
+      if(podeFinalizar){
+        btnFinalizar.classList.remove('btn-secondary');
+        btnFinalizar.classList.add('btn-danger');
+      } else {
+        btnFinalizar.classList.remove('btn-danger');
+        btnFinalizar.classList.add('btn-secondary');
+      }
+      
+      // Adiciona evento ao clicar na alternativa, se não finalizado
+      if (!finalizado) {
+        document.querySelectorAll('#alternativas .alternativa').forEach(elem => {
+          elem.addEventListener('click', function() {
+            const selecionada = this.getAttribute('data-letra');
+            // Se a alternativa clicada já estiver selecionada, desmarcar
+            if(respostas[indice] === selecionada) {
+              respostas[indice] = "";
+            } else {
+              respostas[indice] = selecionada;
+            }
+            exibirQuestao(indice);
+          });
+        });
+      }
+    }
+
+    // Eventos dos botões de navegação
+    btnVoltar.addEventListener('click', function() {
+      if (indiceQuestaoAtual > 0) {
+        indiceQuestaoAtual--;
+        exibirQuestao(indiceQuestaoAtual);
+      }
+    });
+    btnAvancar.addEventListener('click', function() {
+      if (indiceQuestaoAtual < questoes.length - 1) {
+        indiceQuestaoAtual++;
+        exibirQuestao(indiceQuestaoAtual);
+      }
+    });
+    btnFinalizar.addEventListener('click', function() {
+      finalizado = true;
+      exibirQuestao(indiceQuestaoAtual);
+      let acertos = 0;
+      questoes.forEach((questao, idx) => {
+        if (respostas[idx] === questao.correta) acertos++;
+      });
+      alert(`Prova finalizada!\nVocê acertou ${acertos} de ${questoes.length} questões.`);
+    });
+
+    // Lida com cliques para expandir/recolher os menus de bancas
+    document.querySelectorAll('.expand-banca').forEach(botao => {
+      botao.addEventListener('click', function() {
+        // Define qual submenu será afetado com base no data-banca
+        const banca = this.getAttribute('data-banca');
+        const submenu = document.getElementById('submenu-banca-' + banca);
+        if(submenu.style.display === 'block'){
+          submenu.style.display = 'none';
+        } else {
+          submenu.style.display = 'block';
+        }
+      });
+    });
+
+    // Lida com cliques na sidebar (itens de provas e itens de submenu)
+    // Para itens de submenu:
+    listaProvas.addEventListener('click', function(e) {
+      const alvo = e.target;
+      // Se for um item de prova simples com data-arquivo
+      if(alvo.tagName.toLowerCase() === 'li' && alvo.hasAttribute('data-arquivo')) {
+        const arquivo = alvo.getAttribute('data-arquivo');
+        carregarProva(arquivo);
+      }
+      // Trata clique em itens com submenu (caso haja nested submenu de matérias)
+      if(alvo.classList.contains('prova-item') && alvo.hasAttribute('data-prova-index')){
+        const provaIndex = parseInt(alvo.getAttribute('data-prova-index'));
+        // Se houver submenu já visível logo abaixo deste item, remove-o
+        if(alvo.nextElementSibling && alvo.nextElementSibling.classList.contains('submenu')){
+          alvo.parentNode.removeChild(alvo.nextElementSibling);
+        } else {
+          // Cria o submenu dinamicamente usando a configuração
+          const submenu = document.createElement('ul');
+          submenu.classList.add('list-group', 'submenu');
+          provasConfig[provaIndex].materias.forEach(item => {
+            const li = document.createElement('li');
+            li.classList.add('list-group-item');
+            li.textContent = item.nome;
+            li.style.cursor = 'pointer';
+            li.setAttribute('data-arquivo', item.arquivo);
+            submenu.appendChild(li);
+          });
+          alvo.parentNode.insertBefore(submenu, alvo.nextSibling);
+          submenu.style.display = 'block';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
