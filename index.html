@@ -21,34 +21,27 @@
       left: 0;
       overflow-y: auto;
       border-right: 1px solid #ddd;
-      transition: transform 0.3s ease-in-out;
     }
-    /* Estado oculto da sidebar (usado em telas menores) */
-    #sidebar.hidden {
-      transform: translateX(-100%);
-    }
-    /* Toolbar com botão Finalizar e botão de menu para celular */
+    /* Toolbar com botão Finalizar */
     #toolbar {
       position: fixed;
       top: 0;
-      left: 230px; /* considera a largura da sidebar */
+      left: 230px; /* respeita a largura da sidebar */
       right: 0;
       height: 60px;
       background-color: #f8f9fa;
       border-bottom: 1px solid #ddd;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
+      justify-content: flex-end;
+      padding-right: 20px;
       z-index: 1000;
-      transition: left 0.3s ease-in-out;
     }
     /* Área principal: ajusta margem para sidebar e toolbar */
     #main {
-      margin-left: 230px;
+      margin-left: 220px;
       margin-top: 60px;
       padding: 20px;
-      transition: margin-left 0.3s ease-in-out;
     }
     /* Container da questão */
     #questao-container {
@@ -118,33 +111,6 @@
       width: 100%;
       cursor: pointer;
     }
-
-    /* ----------- Responsividade para Smartphones ----------- */
-    @media (max-width: 768px) {
-      /* Sidebar inicialmente oculta */
-      #sidebar {
-        transform: translateX(-100%);
-      }
-      #sidebar.visible {
-        transform: translateX(0);
-      }
-      /* Toolbar ocupa toda a largura */
-      #toolbar {
-        left: 0;
-      }
-      /* Ajusta o main para ocupar a largura total */
-      #main {
-        margin-left: 0;
-      }
-      /* Botão para mostrar/ocultar sidebar */
-      #btn-toggle-sidebar {
-        display: block;
-      }
-    }
-    /* Ocultar o botão de toggle em telas maiores */
-    #btn-toggle-sidebar {
-      display: none;
-    }
   </style>
 </head>
 <body>
@@ -172,15 +138,6 @@
 
   <!-- Toolbar -->
   <div id="toolbar">
-    <!-- Botão de toggle para exibir/ocultar sidebar em smartphones -->
-    <button id="btn-toggle-sidebar" class="btn btn-outline-secondary">
-      &#9776;
-    </button>
-    <!-- Elemento central opcional (pode ser seu logo ou título) -->
-    <div class="d-none d-md-block">
-      <strong>Resolução de Questões</strong>
-    </div>
-    <!-- Botão Finalizar prova -->
     <button id="btn-finalizar" class="btn btn-secondary" disabled>Finalizar prova</button>
   </div>
 
@@ -266,9 +223,6 @@
     const btnAvancar = document.getElementById('btn-avancar');
     const btnFinalizar = document.getElementById('btn-finalizar');
     const listaProvas = document.getElementById('lista-provas');
-    const sidebar = document.getElementById('sidebar');
-    const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
-
     // Seleciona os submenus das bancas
     const submenuBancaX = document.getElementById('submenu-banca-x');
     const submenuBancaY = document.getElementById('submenu-banca-y');
@@ -280,6 +234,7 @@
       provasConfig.forEach((prova, index) => {
         const li = document.createElement('li');
         li.classList.add('list-group-item', 'prova-item');
+        // Se a prova tiver submenu (matérias) adiciona data-prova-index
         if(prova.materias) {
           li.setAttribute('data-prova-index', index);
           li.textContent = prova.nome;
@@ -310,10 +265,6 @@
           finalizado = false;
           respostas = new Array(questoes.length).fill("");
           exibirQuestao(indiceQuestaoAtual);
-          // Em telas pequenas, depois de carregar a prova, oculta a sidebar para dar mais espaço
-          if(window.innerWidth <= 768) {
-            sidebar.classList.remove("visible");
-          }
         })
         .catch(error => {
           conteudoQuestao.innerHTML = `<p class="text-danger">${error}</p>`;
@@ -419,6 +370,7 @@
         document.querySelectorAll('#alternativas .alternativa').forEach(elem => {
           elem.addEventListener('click', function() {
             const selecionada = this.getAttribute('data-letra');
+            // Se a alternativa clicada já estiver selecionada, desmarcar
             if(respostas[indice] === selecionada) {
               respostas[indice] = "";
             } else {
@@ -456,6 +408,7 @@
     // Lida com cliques para expandir/recolher os menus de bancas
     document.querySelectorAll('.expand-banca').forEach(botao => {
       botao.addEventListener('click', function() {
+        // Define qual submenu será afetado com base no data-banca
         const banca = this.getAttribute('data-banca');
         const submenu = document.getElementById('submenu-banca-' + banca);
         if(submenu.style.display === 'block'){
@@ -467,17 +420,22 @@
     });
 
     // Lida com cliques na sidebar (itens de provas e itens de submenu)
+    // Para itens de submenu:
     listaProvas.addEventListener('click', function(e) {
       const alvo = e.target;
+      // Se for um item de prova simples com data-arquivo
       if(alvo.tagName.toLowerCase() === 'li' && alvo.hasAttribute('data-arquivo')) {
         const arquivo = alvo.getAttribute('data-arquivo');
         carregarProva(arquivo);
       }
+      // Trata clique em itens com submenu (caso haja nested submenu de matérias)
       if(alvo.classList.contains('prova-item') && alvo.hasAttribute('data-prova-index')){
         const provaIndex = parseInt(alvo.getAttribute('data-prova-index'));
+        // Se houver submenu já visível logo abaixo deste item, remove-o
         if(alvo.nextElementSibling && alvo.nextElementSibling.classList.contains('submenu')){
           alvo.parentNode.removeChild(alvo.nextElementSibling);
         } else {
+          // Cria o submenu dinamicamente usando a configuração
           const submenu = document.createElement('ul');
           submenu.classList.add('list-group', 'submenu');
           provasConfig[provaIndex].materias.forEach(item => {
@@ -491,20 +449,6 @@
           alvo.parentNode.insertBefore(submenu, alvo.nextSibling);
           submenu.style.display = 'block';
         }
-      }
-    });
-
-    // Evento para o botão de toggle da sidebar (para smartphones)
-    btnToggleSidebar.addEventListener('click', function() {
-      // Em telas menores, alterna a classe "visible" na sidebar 
-      sidebar.classList.toggle("visible");
-    });
-
-    // Se a janela for redimensionada para telas maiores, garante que a sidebar fique visível
-    window.addEventListener('resize', function() {
-      if(window.innerWidth > 768) {
-        sidebar.classList.remove("hidden");
-        sidebar.classList.add("visible");
       }
     });
   </script>
